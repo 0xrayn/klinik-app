@@ -15,7 +15,7 @@ export default function DashboardLayout() {
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-slate-50">
+        <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
             <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 <Topbar onMenu={() => setSidebarOpen(true)} />
