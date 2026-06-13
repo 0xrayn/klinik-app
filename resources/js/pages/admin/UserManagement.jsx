@@ -1,16 +1,9 @@
-import React, { useState } from 'react';
-import { PlusIcon, PencilSquareIcon, TrashIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
-import { Card, Badge, Button, Avatar, Modal, ConfirmModal, SectionHeader } from '../../components/ui';
+import React, { useEffect, useState } from 'react';
+import { PlusIcon, PencilSquareIcon, TrashIcon, ShieldCheckIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { Card, Badge, Button, Avatar, Modal, ConfirmModal, EmptyState, TableSkeleton, Pagination, SectionHeader } from '../../components/ui';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
-
-const MOCK = [
-    { id:1, name:'Admin Klinik',    email:'admin@klinik.id',   role:'admin',   status:'active',   created:'2024-01-01' },
-    { id:2, name:'dr. Siti Rahayu', email:'dokter@klinik.id',  role:'dokter',  status:'active',   created:'2024-01-05' },
-    { id:3, name:'Perawat Ana',     email:'perawat@klinik.id', role:'perawat', status:'active',   created:'2024-02-15' },
-    { id:4, name:'Ahmad Fauzi',     email:'pasien@klinik.id',  role:'pasien',  status:'active',   created:'2024-06-10' },
-    { id:5, name:'User Nonaktif',   email:'off@klinik.id',     role:'pasien',  status:'inactive', created:'2024-03-01' },
-];
+import axios from 'axios';
 
 const ROLE_STYLES = {
     admin:   { v:'danger',  label:'Admin' },
@@ -20,65 +13,107 @@ const ROLE_STYLES = {
 };
 
 export default function UserManagement() {
-    const [users, setUsers] = useState(MOCK);
-    const [addOpen, setAdd] = useState(false);
+    const [users, setUsers]   = useState([]);
+    const [meta, setMeta]     = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [page, setPage]     = useState(1);
+    const [search, setSearch] = useState('');
+    const [addOpen, setAdd]   = useState(false);
     const [editUser, setEdit] = useState(null);
-    const [del, setDel]     = useState({ open: false, id: null });
+    const [del, setDel]       = useState({ open: false, id: null });
 
-    const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
+    const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
-    // Stats
-    const stats = Object.entries(ROLE_STYLES).map(([role, { v, label }]) => ({
-        role, v, label, count: users.filter(u => u.role === role).length,
-    }));
+    const load = async (p = page, q = search) => {
+        setLoading(true);
+        try {
+            const res = await axios.get('/api/admin/users', { params: { page: p, search: q || undefined, per_page: 10 } });
+            setUsers(res.data.data.data);
+            setMeta(res.data.data);
+        } catch (e) {
+            toast.error('Gagal memuat data user');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => { load(page, search); }, [page]);
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        setPage(1);
+        load(1, search);
+    };
 
     const onSubmit = async (data) => {
-        await new Promise(r => setTimeout(r, 600));
-        if (editUser) {
-            setUsers(prev => prev.map(u => u.id === editUser.id ? { ...u, ...data } : u));
-            toast.success('User diperbarui');
-            setEdit(null);
-        } else {
-            setUsers(prev => [...prev, { id: Date.now(), ...data, status: 'active', created: new Date().toISOString().split('T')[0] }]);
-            toast.success('User berhasil ditambahkan');
-            setAdd(false);
+        try {
+            if (editUser) {
+                await axios.put(`/api/admin/users/${editUser.id}`, data);
+                toast.success('User diperbarui');
+                setEdit(null);
+            } else {
+                await axios.post('/api/admin/users', data);
+                toast.success('User berhasil ditambahkan');
+                setAdd(false);
+            }
+            reset();
+            load();
+        } catch (e) {
+            const msg = e.response?.data?.errors
+                ? Object.values(e.response.data.errors).flat().join(', ')
+                : (e.response?.data?.message ?? 'Terjadi kesalahan');
+            toast.error(msg);
         }
-        reset();
     };
 
-    const handleDelete = () => {
-        setUsers(prev => prev.filter(u => u.id !== del.id));
-        setDel({ open: false, id: null });
-        toast.success('User dihapus');
+    const handleDelete = async () => {
+        try {
+            await axios.delete(`/api/admin/users/${del.id}`);
+            toast.success('User dihapus');
+            load();
+        } catch (e) {
+            toast.error(e.response?.data?.message ?? 'Gagal menghapus user');
+        } finally {
+            setDel({ open: false, id: null });
+        }
     };
 
-    const toggleStatus = (id) => {
-        setUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u));
-        toast.success('Status diperbarui');
+    const toggleStatus = async (id) => {
+        try {
+            await axios.put(`/api/admin/users/${id}/toggle-status`);
+            load();
+        } catch (e) {
+            toast.error('Gagal mengubah status');
+        }
     };
 
     return (
         <div className="space-y-5 animate-slide-up">
             <SectionHeader title="Manajemen User" subtitle="Kelola akun dan hak akses pengguna"
                 action={
-                    <Button variant="primary" size="sm" onClick={() => { reset(); setAdd(true); }}>
+                    <Button variant="primary" size="sm" onClick={() => { reset({}); setAdd(true); }}>
                         <PlusIcon className="w-4 h-4" />Tambah User
                     </Button>
                 }
             />
 
-            {/* Role stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {stats.map(s => (
-                    <Card key={s.role} className="p-4 flex items-center gap-3">
-                        <div className="text-2xl font-bold text-slate-900">{s.count}</div>
-                        <Badge variant={s.v}>{s.label}</Badge>
-                    </Card>
-                ))}
-            </div>
+            {/* Search */}
+            <form onSubmit={handleSearch} className="flex gap-2">
+                <div className="relative flex-1 max-w-sm">
+                    <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input value={search} onChange={e => setSearch(e.target.value)}
+                        placeholder="Cari nama atau email…" className="input input-icon" />
+                </div>
+                <Button type="submit" variant="outline" size="sm">Cari</Button>
+            </form>
 
             {/* Table */}
             <Card>
+                {loading ? (
+                    <div className="p-5"><TableSkeleton rows={6} cols={6} /></div>
+                ) : users.length === 0 ? (
+                    <EmptyState icon={ShieldCheckIcon} title="Tidak ada user" desc="Coba ubah kata kunci pencarian" />
+                ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
@@ -90,13 +125,14 @@ export default function UserManagement() {
                         </thead>
                         <tbody>
                             {users.map(u => {
-                                const r = ROLE_STYLES[u.role] || { v: 'neutral', label: u.role };
+                                const roleName = u.roles?.[0]?.name ?? 'pasien';
+                                const r = ROLE_STYLES[roleName] || { v: 'neutral', label: roleName };
                                 return (
                                     <tr key={u.id} className="tbl-row">
                                         <td className="tbl-cell">
                                             <div className="flex items-center gap-2.5">
                                                 <Avatar name={u.name} size="sm"
-                                                    color={u.role === 'dokter' ? 'bg-violet-100 text-violet-700' : undefined} />
+                                                    color={roleName === 'dokter' ? 'bg-violet-100 text-violet-700' : undefined} />
                                                 <span className="font-semibold text-slate-800 text-sm">{u.name}</span>
                                             </div>
                                         </td>
@@ -106,17 +142,17 @@ export default function UserManagement() {
                                         </td>
                                         <td className="tbl-cell">
                                             <button onClick={() => toggleStatus(u.id)} title="Klik untuk toggle status">
-                                                <Badge variant={u.status === 'active' ? 'success' : 'neutral'}
-                                                    pulse={u.status === 'active'}>
-                                                    {u.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                                                <Badge variant={u.is_active ? 'success' : 'neutral'}
+                                                    pulse={u.is_active}>
+                                                    {u.is_active ? 'Aktif' : 'Nonaktif'}
                                                 </Badge>
                                             </button>
                                         </td>
-                                        <td className="tbl-cell text-xs text-slate-400">{u.created}</td>
+                                        <td className="tbl-cell text-xs text-slate-400">{new Date(u.created_at).toLocaleDateString('id-ID')}</td>
                                         <td className="tbl-cell">
                                             <div className="flex items-center gap-1">
                                                 <button
-                                                    onClick={() => { setEdit(u); reset({ name: u.name, email: u.email, role: u.role }); }}
+                                                    onClick={() => { setEdit(u); reset({ name: u.name, email: u.email, phone: u.phone ?? '', role: roleName }); }}
                                                     className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors">
                                                     <PencilSquareIcon className="w-4 h-4" />
                                                 </button>
@@ -133,6 +169,8 @@ export default function UserManagement() {
                         </tbody>
                     </table>
                 </div>
+                )}
+                <Pagination meta={meta} onChange={setPage} />
             </Card>
 
             {/* Add / Edit Modal */}
@@ -148,11 +186,19 @@ export default function UserManagement() {
                         <label className="field-label">Nama Lengkap</label>
                         <input className="input" placeholder="Nama pengguna"
                             {...register('name', { required: 'Wajib diisi' })} />
+                        {errors.name && <p className="field-error">{errors.name.message}</p>}
                     </div>
                     <div>
                         <label className="field-label">Email</label>
                         <input type="email" className="input" placeholder="email@klinik.id"
                             {...register('email', { required: 'Wajib diisi' })} />
+                        {errors.email && <p className="field-error">{errors.email.message}</p>}
+                    </div>
+                    <div>
+                        <label className="field-label">No. Telepon</label>
+                        <input type="tel" className="input" placeholder="08xx"
+                            {...register('phone', { pattern: { value: /^[0-9]*$/, message: 'Hanya boleh angka' }, maxLength: { value: 15, message: 'Maks. 15 digit' } })} />
+                        {errors.phone && <p className="field-error">{errors.phone.message}</p>}
                     </div>
                     <div>
                         <label className="field-label">Role</label>
@@ -163,12 +209,14 @@ export default function UserManagement() {
                             <option value="perawat">Perawat</option>
                             <option value="pasien">Pasien</option>
                         </select>
+                        {errors.role && <p className="field-error">{errors.role.message}</p>}
                     </div>
                     {!editUser && (
                         <div>
                             <label className="field-label">Password</label>
                             <input type="password" className="input" placeholder="Min. 8 karakter"
                                 {...register('password', { required: 'Wajib diisi', minLength: { value: 8, message: 'Min. 8 karakter' } })} />
+                            {errors.password && <p className="field-error">{errors.password.message}</p>}
                         </div>
                     )}
                     <div className="flex justify-end gap-3 pt-2">
@@ -187,7 +235,7 @@ export default function UserManagement() {
                 open={del.open}
                 onClose={() => setDel({ open: false, id: null })}
                 title="Hapus User"
-                message="Yakin ingin menghapus user ini? Semua data terkait akan ikut terhapus."
+                message="Yakin ingin menghapus user ini? Data akan dipindahkan ke Log Aktivitas dan bisa dikembalikan."
                 onConfirm={handleDelete}
             />
         </div>

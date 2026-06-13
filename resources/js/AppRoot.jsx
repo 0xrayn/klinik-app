@@ -22,6 +22,8 @@ import PatientForm from './pages/patients/PatientForm';
 import PatientDetail from './pages/patients/PatientDetail';
 import MedicalRecordPage from './pages/medical-records/MedicalRecordPage';
 import UserManagement from './pages/admin/UserManagement';
+import ActivityLogPage from './pages/admin/ActivityLogPage';
+import ProfilePage from './pages/profile/ProfilePage';
 import NotFound from './pages/NotFound';
 
 function ProtectedRoute({ children, roles = [] }) {
@@ -73,9 +75,9 @@ export default function App() {
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route path="/dashboard" element={<DashboardPage />} />
 
-                <Route path="/appointments" element={<AppointmentList />} />
-                <Route path="/appointments/create" element={<AppointmentCreate />} />
-                <Route path="/appointments/:id" element={<AppointmentDetail />} />
+                <Route path="/appointments" element={<ProtectedRoute roles={['admin','dokter','pasien']}><AppointmentList /></ProtectedRoute>} />
+                <Route path="/appointments/create" element={<ProtectedRoute roles={['admin','dokter','pasien']}><AppointmentCreate /></ProtectedRoute>} />
+                <Route path="/appointments/:id" element={<ProtectedRoute roles={['admin','dokter','pasien']}><AppointmentDetail /></ProtectedRoute>} />
 
                 <Route path="/schedules" element={<SchedulePage />} />
 
@@ -104,9 +106,15 @@ export default function App() {
                     element={<ProtectedRoute roles={['admin', 'dokter', 'perawat']}><MedicalRecordPage /></ProtectedRoute>}
                 />
 
+                <Route path="/profile" element={<ProfilePage />} />
+
                 <Route
                     path="/admin/users"
                     element={<ProtectedRoute roles={['admin']}><UserManagement /></ProtectedRoute>}
+                />
+                <Route
+                    path="/admin/activity-logs"
+                    element={<ProtectedRoute roles={['admin']}><ActivityLogPage /></ProtectedRoute>}
                 />
             </Route>
 

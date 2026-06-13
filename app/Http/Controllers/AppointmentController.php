@@ -31,8 +31,8 @@ class AppointmentController extends Controller
         $data = $request->validate([
             'patient_name'     => 'required_without:patient_id|string|max:255',
             'patient_id'       => 'nullable|exists:patients,id',
-            'nik'              => 'required_without:patient_id|string|size:16',
-            'phone'            => 'required_without:patient_id|string|max:20',
+            'nik'              => 'required_without:patient_id|digits:16',
+            'phone'            => 'required_without:patient_id|digits_between:9,15',
             'birth_date'       => 'nullable|date',
             'address'          => 'nullable|string',
             'doctor_id'        => 'required|exists:doctors,id',
@@ -97,6 +97,7 @@ class AppointmentController extends Controller
 
     public function destroy(Appointment $appointment): JsonResponse
     {
+        $appointment->logDeletion();
         $appointment->delete();
         return response()->json(['message' => 'Janji temu dihapus']);
     }

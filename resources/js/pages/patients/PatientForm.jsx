@@ -1,22 +1,52 @@
-// PatientForm.jsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Textarea, SectionHeader } from '../../components/ui';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 export default function PatientForm() {
     const nav = useNavigate();
     const { id } = useParams();
     const isEdit = !!id;
-    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+    const [loading, setLoading] = useState(isEdit);
+    const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
+
+    useEffect(() => {
+        if (!isEdit) return;
+        axios.get(`/api/patients/${id}`).then(res => {
+            const p = res.data.data;
+            reset({
+                name: p.name, nik: p.nik, phone: p.phone, bpjs: p.bpjs ?? '',
+                birth_date: p.birth_date, gender: p.gender, blood_type: p.blood_type ?? '',
+                address: p.address, allergies: p.allergies ?? '', chronic_diseases: p.chronic_diseases ?? '',
+            });
+        }).catch(() => toast.error('Gagal memuat data pasien'))
+          .finally(() => setLoading(false));
+    }, [id]);
 
     const onSubmit = async (data) => {
-        await new Promise(r => setTimeout(r, 700));
-        toast.success(isEdit ? 'Data pasien diperbarui!' : 'Pasien berhasil ditambahkan!');
-        nav('/patients');
+        try {
+            if (isEdit) {
+                await axios.put(`/api/patients/${id}`, data);
+                toast.success('Data pasien diperbarui!');
+            } else {
+                await axios.post('/api/patients', data);
+                toast.success('Pasien berhasil ditambahkan!');
+            }
+            nav('/patients');
+        } catch (e) {
+            const msg = e.response?.data?.errors
+                ? Object.values(e.response.data.errors).flat().join(', ')
+                : (e.response?.data?.message ?? 'Terjadi kesalahan');
+            toast.error(msg);
+        }
     };
+
+    if (loading) {
+        return <p className="text-sm text-slate-400">Memuat data…</p>;
+    }
 
     return (
         <div className="max-w-2xl space-y-5 animate-slide-up">
@@ -37,9 +67,13 @@ export default function PatientForm() {
                             <Input label="Nama Lengkap" placeholder="Nama sesuai KTP" error={errors.name?.message}
                                 {...register('name', { required:'Wajib diisi', minLength:{value:3,message:'Min. 3 karakter'} })} />
                         </div>
-                        <Input label="NIK" placeholder="16 digit NIK" error={errors.nik?.message}
-                            {...register('nik', { required:'Wajib diisi', minLength:{value:16,message:'16 digit'}, maxLength:{value:16,message:'16 digit'} })} />
-                        <Input label="No. BPJS (opsional)" placeholder="13 digit" {...register('bpjs')} />
+                        <Input label="NIK" placeholder="16 digit NIK" inputMode="numeric" disabled={isEdit} error={errors.nik?.message}
+                            {...register('nik', {
+                                required: 'Wajib diisi',
+                                pattern: { value: /^[0-9]{16}$/, message: 'NIK harus 16 digit angka' },
+                            })} />
+                        <Input label="No. BPJS (opsional)" placeholder="13 digit" inputMode="numeric" error={errors.bpjs?.message}
+                            {...register('bpjs', { pattern: { value: /^[0-9]*$/, message: 'Hanya boleh angka' } })} />
                         <Input label="Tanggal Lahir" type="date" error={errors.birth_date?.message}
                             {...register('birth_date', { required:'Wajib diisi' })} />
                         <Select label="Jenis Kelamin" error={errors.gender?.message} {...register('gender', { required:'Wajib dipilih' })}>
@@ -51,8 +85,11 @@ export default function PatientForm() {
                             <option value="">-- Pilih --</option>
                             {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(b => <option key={b}>{b}</option>)}
                         </Select>
-                        <Input label="No. Telepon" type="tel" placeholder="08xx" error={errors.phone?.message}
-                            {...register('phone', { required:'Wajib diisi' })} />
+                        <Input label="No. Telepon" type="tel" inputMode="numeric" placeholder="08xxxxxxxxxx" error={errors.phone?.message}
+                            {...register('phone', {
+                                required:'Wajib diisi',
+                                pattern: { value: /^[0-9]{9,15}$/, message: 'No. telepon harus 9-15 digit angka' },
+                            })} />
                         <div className="sm:col-span-2">
                             <Textarea label="Alamat Lengkap" placeholder="Jl. nama, nomor, kelurahan, kecamatan, kota" rows={2}
                                 error={errors.address?.message} {...register('address', { required:'Wajib diisi' })} />

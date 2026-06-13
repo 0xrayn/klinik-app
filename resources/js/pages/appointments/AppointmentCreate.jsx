@@ -1,19 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { ArrowLeftIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { Card, Button, Input, Select, Textarea } from '../../components/ui';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 import clsx from 'clsx';
-
-const DOCTORS = [
-    { id:1, name:'dr. Siti Rahayu, Sp.PD',    spec:'Penyakit Dalam', slots:['08:00','08:30','09:00','09:30','10:00','10:30'] },
-    { id:2, name:'dr. Budi Prakoso, drg',       spec:'Gigi & Mulut',   slots:['09:00','09:30','10:00','11:00','11:30'] },
-    { id:3, name:'dr. Yuni Astuti, Sp.A',       spec:'Anak',           slots:['08:00','08:30','10:30','11:00','13:00'] },
-    { id:4, name:'dr. Hendra Wijaya, Sp.JP',    spec:'Jantung',        slots:['13:00','13:30','14:00','14:30'] },
-    { id:5, name:'dr. Maya Kusuma, Sp.M',       spec:'Mata',           slots:['08:00','09:00','10:00','11:00'] },
-];
-const POLI = ['Penyakit Dalam','Gigi & Mulut','Anak','Jantung','Mata','Kulit','Saraf','Kandungan'];
 
 const STEPS = ['Data Pasien','Pilih Dokter','Keluhan & Kirim'];
 
@@ -50,24 +42,63 @@ function StepBar({ current }) {
 export default function AppointmentCreate() {
     const nav = useNavigate();
     const [step, setStep]       = useState(0);
-    const [selDoctor, setSelDoc] = useState(null);
-    const { register, handleSubmit, watch, setValue, getValues, trigger, formState: { errors, isSubmitting } } = useForm();
+    const [doctors, setDoctors] = useState([]);
+    const [slots, setSlots]     = useState([]);
+    const [slotsLoading, setSlotsLoading] = useState(false);
+    const { register, handleSubmit, watch, setValue, trigger, formState: { errors, isSubmitting } } = useForm();
+
+    useEffect(() => {
+        axios.get('/api/doctors', { params: { per_page: 100 } })
+            .then(res => setDoctors(res.data.data.data))
+            .catch(() => toast.error('Gagal memuat daftar dokter'));
+    }, []);
 
     const goNext = async (fields) => {
         const ok = await trigger(fields);
         if (ok) setStep(s => s + 1);
     };
 
-    const onSubmit = async () => {
-        await new Promise(r => setTimeout(r, 900));
-        toast.success('Janji temu berhasil dibuat!');
-        nav('/appointments');
+    const onSubmit = async (data) => {
+        try {
+            await axios.post('/api/appointments', {
+                patient_name: data.patient_name,
+                nik:          data.nik,
+                phone:        data.phone,
+                birth_date:   data.birth_date,
+                address:      data.address,
+                doctor_id:    data.doctor_id,
+                appointment_date: data.date,
+                appointment_time: data.time,
+                complaint:    data.complaint,
+                notes:        data.notes,
+            });
+            toast.success('Janji temu berhasil dibuat!');
+            nav('/appointments');
+        } catch (e) {
+            const msg = e.response?.data?.errors
+                ? Object.values(e.response.data.errors).flat().join(', ')
+                : (e.response?.data?.message ?? 'Gagal membuat janji temu');
+            toast.error(msg);
+        }
     };
 
     const watchPoli   = watch('poli');
-    const watchDoc    = watch('doctor_id');
+    const watchDocId  = watch('doctor_id');
+    const watchDate   = watch('date');
     const watchSlot   = watch('time');
-    const filteredDoc = watchPoli ? DOCTORS.filter(d => d.spec === watchPoli) : DOCTORS;
+
+    const POLI = [...new Set(doctors.map(d => d.specialization))];
+    const filteredDoc = watchPoli ? doctors.filter(d => d.specialization === watchPoli) : doctors;
+    const selDoctor = doctors.find(d => String(d.id) === String(watchDocId));
+
+    useEffect(() => {
+        if (!watchDocId || !watchDate) { setSlots([]); return; }
+        setSlotsLoading(true);
+        axios.get(`/api/doctors/${watchDocId}/available-slots`, { params: { date: watchDate } })
+            .then(res => setSlots(res.data.data))
+            .catch(() => setSlots([]))
+            .finally(() => setSlotsLoading(false));
+    }, [watchDocId, watchDate]);
 
     return (
         <div className="max-w-2xl space-y-5 animate-slide-up">
@@ -95,10 +126,10 @@ export default function AppointmentCreate() {
                             <Input label="Nama Lengkap" placeholder="Nama sesuai KTP" error={errors.patient_name?.message}
                                 {...register('patient_name', { required:'Wajib diisi', minLength:{value:3,message:'Min 3 karakter'} })} />
                         </div>
-                        <Input label="NIK (16 digit)" placeholder="3578xxxxxxxxxx" error={errors.nik?.message}
-                            {...register('nik', { required:'Wajib diisi', minLength:{value:16,message:'16 digit'}, maxLength:{value:16,message:'16 digit'} })} />
-                        <Input label="No. Telepon" type="tel" placeholder="08xx" error={errors.phone?.message}
-                            {...register('phone', { required:'Wajib diisi' })} />
+                        <Input label="NIK (16 digit)" placeholder="3578xxxxxxxxxx" inputMode="numeric" error={errors.nik?.message}
+                            {...register('nik', { required:'Wajib diisi', pattern:{value:/^[0-9]{16}$/,message:'NIK harus 16 digit angka'} })} />
+                        <Input label="No. Telepon" type="tel" inputMode="numeric" placeholder="08xxxxxxxxxx" error={errors.phone?.message}
+                            {...register('phone', { required:'Wajib diisi', pattern:{value:/^[0-9]{9,15}$/,message:'No. telepon harus 9-15 digit angka'} })} />
                         <Input label="Tanggal Lahir" type="date" error={errors.birth_date?.message}
                             {...register('birth_date', { required:'Wajib diisi' })} />
                         <Select label="Jenis Kelamin" error={errors.gender?.message}
@@ -124,54 +155,59 @@ export default function AppointmentCreate() {
                 <Card className="p-6 space-y-4 animate-scale-in">
                     <p className="font-semibold text-slate-800 text-sm">Pilih Dokter & Jadwal</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Select label="Poli / Spesialisasi" {...register('poli', { required:'Wajib pilih' })} error={errors.poli?.message}
-                            onChange={e => { setValue('poli', e.target.value); setValue('doctor_id',''); setSelDoc(null); setValue('time',''); }}>
+                        <Select label="Poli / Spesialisasi" {...register('poli')}
+                            onChange={e => { setValue('poli', e.target.value); setValue('doctor_id',''); setValue('time',''); }}>
                             <option value="">-- Semua Poli --</option>
                             {POLI.map(p => <option key={p}>{p}</option>)}
                         </Select>
 
                         <Select label="Dokter" error={errors.doctor_id?.message}
                             {...register('doctor_id', { required:'Pilih dokter' })}
-                            onChange={e => {
-                                setValue('doctor_id', e.target.value);
-                                setValue('time', '');
-                                setSelDoc(DOCTORS.find(d => d.id === +e.target.value) || null);
-                            }}>
+                            onChange={e => { setValue('doctor_id', e.target.value); setValue('time', ''); }}>
                             <option value="">-- Pilih Dokter --</option>
-                            {filteredDoc.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                            {filteredDoc.map(d => <option key={d.id} value={d.id}>{d.user?.name} — {d.specialization}</option>)}
                         </Select>
 
                         <Input label="Tanggal Kunjungan" type="date" error={errors.date?.message}
                             min={new Date().toISOString().split('T')[0]}
-                            {...register('date', { required:'Wajib diisi' })} />
+                            {...register('date', { required:'Wajib diisi' })}
+                            onChange={e => { setValue('date', e.target.value); setValue('time', ''); }} />
 
                         <div>
                             <label className="field-label">Jam Tersedia</label>
-                            {selDoctor ? (
+                            {!watchDocId || !watchDate ? (
+                                <p className="text-xs text-slate-400 mt-2 bg-slate-50 rounded-xl px-3 py-2.5">
+                                    Pilih dokter dan tanggal untuk melihat jam tersedia
+                                </p>
+                            ) : slotsLoading ? (
+                                <p className="text-xs text-slate-400 mt-2">Memuat jam tersedia…</p>
+                            ) : slots.length === 0 ? (
+                                <p className="text-xs text-slate-400 mt-2 bg-slate-50 rounded-xl px-3 py-2.5">
+                                    Dokter tidak praktik pada tanggal ini
+                                </p>
+                            ) : (
                                 <div className="flex flex-wrap gap-2 mt-1">
-                                    {selDoctor.slots.map(t => (
-                                        <label key={t}>
-                                            <input type="radio" value={t} className="sr-only" {...register('time', { required:'Pilih jam' })} />
+                                    {slots.map(s => (
+                                        <label key={s.time} className={!s.available ? 'cursor-not-allowed' : ''}>
+                                            <input type="radio" value={s.time} disabled={!s.available} className="sr-only" {...register('time', { required:'Pilih jam' })} />
                                             <span className={clsx(
                                                 'inline-block px-3 py-1.5 rounded-xl border-2 text-xs font-semibold cursor-pointer transition-all',
-                                                watchSlot === t
-                                                    ? 'border-brand-600 bg-brand-50 text-brand-700'
-                                                    : 'border-slate-200 text-slate-600 hover:border-brand-300 hover:bg-brand-50/50',
-                                            )}>{t}</span>
+                                                !s.available
+                                                    ? 'border-slate-100 bg-slate-50 text-slate-300 line-through'
+                                                    : watchSlot === s.time
+                                                        ? 'border-brand-600 bg-brand-50 text-brand-700'
+                                                        : 'border-slate-200 text-slate-600 hover:border-brand-300 hover:bg-brand-50/50',
+                                            )}>{s.time}</span>
                                         </label>
                                     ))}
                                 </div>
-                            ) : (
-                                <p className="text-xs text-slate-400 mt-2 bg-slate-50 rounded-xl px-3 py-2.5">
-                                    Pilih dokter untuk melihat jam tersedia
-                                </p>
                             )}
                             {errors.time && <p className="field-error">{errors.time.message}</p>}
                         </div>
                     </div>
                     <div className="flex justify-between pt-1">
                         <Button variant="ghost" size="sm" onClick={() => setStep(0)}>← Kembali</Button>
-                        <Button variant="primary" size="sm" onClick={() => goNext(['poli','doctor_id','date','time'])}>Lanjut →</Button>
+                        <Button variant="primary" size="sm" onClick={() => goNext(['doctor_id','date','time'])}>Lanjut →</Button>
                     </div>
                 </Card>
             )}
@@ -193,8 +229,8 @@ export default function AppointmentCreate() {
                             <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                                 {[
                                     ['Pasien', watch('patient_name')],
-                                    ['Dokter', selDoctor?.name],
-                                    ['Poli',   watch('poli')],
+                                    ['Dokter', selDoctor?.user?.name],
+                                    ['Poli',   selDoctor?.specialization],
                                     ['Tanggal',watch('date')],
                                     ['Jam',    watch('time')],
                                 ].map(([k,v]) => (

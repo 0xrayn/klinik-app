@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me',                [AuthController::class, 'me']);
         Route::post('/logout',           [AuthController::class, 'logout']);
         Route::put('/profile',           [AuthController::class, 'updateProfile']);
+        Route::post('/avatar',           [AuthController::class, 'uploadAvatar']);
         Route::put('/change-password',   [AuthController::class, 'changePassword']);
     });
 
@@ -75,5 +76,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('users', UserController::class);
         Route::put('users/{user}/toggle-status', [UserController::class, 'toggleStatus']);
         Route::put('users/{user}/assign-role',   [UserController::class, 'assignRole']);
+
+        Route::get('activity-logs',                  [\App\Http\Controllers\ActivityLogController::class, 'index']);
+        Route::post('activity-logs/{activityLog}/restore', [\App\Http\Controllers\ActivityLogController::class, 'restore']);
     });
 });

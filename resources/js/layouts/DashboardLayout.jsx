@@ -5,9 +5,18 @@ import Topbar from '../components/layout/Topbar';
 
 export default function DashboardLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === '1');
+
+    const toggleCollapsed = () => {
+        setCollapsed(c => {
+            localStorage.setItem('sidebar-collapsed', !c ? '1' : '0');
+            return !c;
+        });
+    };
+
     return (
         <div className="flex h-screen overflow-hidden bg-slate-50">
-            <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+            <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 <Topbar onMenu={() => setSidebarOpen(true)} />
                 <main className="flex-1 overflow-y-auto">

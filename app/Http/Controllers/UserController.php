@@ -16,12 +16,16 @@ class UserController extends Controller {
     }
     public function show(User $user): JsonResponse { return response()->json(['data'=>$user->load('roles')]); }
     public function update(Request $r, User $user): JsonResponse {
-        $data=$r->validate(['name'=>'sometimes|string|max:255','email'=>'sometimes|email|unique:users,email,'.$user->id,'phone'=>'nullable|string|max:20']);
+        $data=$r->validate(['name'=>'sometimes|string|max:255','email'=>'sometimes|email|unique:users,email,'.$user->id,'phone'=>'nullable|string|max:20','role'=>'sometimes|exists:roles,name']);
+        $role = $data['role'] ?? null;
+        unset($data['role']);
         $user->update($data);
+        if ($role) $user->syncRoles([$role]);
         return response()->json(['message'=>'User diperbarui','data'=>$user->fresh('roles')]);
     }
     public function destroy(User $user): JsonResponse {
         if ($user->id===auth()->id()) return response()->json(['message'=>'Tidak dapat hapus akun sendiri'],403);
+        $user->logDeletion();
         $user->delete();
         return response()->json(['message'=>'User dihapus']);
     }

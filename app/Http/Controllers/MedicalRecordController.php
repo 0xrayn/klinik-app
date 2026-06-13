@@ -26,6 +26,7 @@ class MedicalRecordController extends Controller {
         return response()->json(['message'=>'Rekam medis diperbarui','data'=>$medicalRecord->fresh(['patient','doctor.user'])]);
     }
     public function destroy(MedicalRecord $medicalRecord): JsonResponse {
+        $medicalRecord->logDeletion();
         $medicalRecord->delete();
         return response()->json(['message'=>'Rekam medis dihapus']);
     }

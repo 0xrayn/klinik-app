@@ -75,6 +75,24 @@ class AuthController extends Controller
         return response()->json(['message' => 'Profil diperbarui', 'data' => $user]);
     }
 
+    public function uploadAvatar(Request $request): JsonResponse
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
+
+        $user = $request->user();
+
+        if ($user->avatar) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
+        }
+
+        $path = $request->file('avatar')->store('avatars', 'public');
+        $user->update(['avatar' => $path]);
+
+        return response()->json(['message' => 'Foto profil diperbarui', 'data' => $user->fresh()]);
+    }
+
     public function changePassword(Request $request): JsonResponse
     {
         $request->validate([

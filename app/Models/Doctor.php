@@ -4,16 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Concerns\LogsDeletion;
 
 class Doctor extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes, LogsDeletion;
 
     protected $fillable = [
         'user_id', 'specialization', 'license_number', 'education',
-        'bio', 'experience_years', 'consultation_fee', 'rating',
+        'bio', 'photo_url', 'experience_years', 'consultation_fee', 'rating',
         'total_reviews', 'is_active',
     ];
+
+    public function activityLabel(): string
+    {
+        return $this->user?->name ?? ('Dokter #' . $this->id);
+    }
 
     protected $casts = [
         'education'        => 'array',

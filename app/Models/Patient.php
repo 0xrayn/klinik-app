@@ -1,10 +1,12 @@
 <?php namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Concerns\LogsDeletion;
 
 class Patient extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes, LogsDeletion;
     protected $fillable = [
         'user_id','name','nik','phone','birth_date','gender',
         'blood_type','address','bpjs','allergies','chronic_diseases','is_active',

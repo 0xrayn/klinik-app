@@ -76,6 +76,15 @@ export default function DashboardPage() {
         return 'Selamat malam';
     };
 
+    const displayName = () => {
+        const parts = user?.name?.split(' ') ?? [];
+        const first = parts[0]?.replace(/\.$/, '').toLowerCase();
+        if (['dr', 'drg'].includes(first) && parts[1]) {
+            return `${parts[0]} ${parts[1]}`;
+        }
+        return parts[0] || '';
+    };
+
     useEffect(() => { const t = setTimeout(() => setLoading(false), 700); return () => clearTimeout(t); }, []);
 
     return (
@@ -83,7 +92,7 @@ export default function DashboardPage() {
             {/* Greeting */}
             <div className="flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-xl font-bold text-slate-900">{greet()}, {user?.name?.split(' ')[0]} 👋</h1>
+                    <h1 className="text-xl font-bold text-slate-900">{greet()}, {displayName()} 👋</h1>
                     <p className="text-sm text-slate-500 mt-0.5">
                         {new Date().toLocaleDateString('id-ID', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}
                     </p>

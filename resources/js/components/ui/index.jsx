@@ -64,10 +64,13 @@ const AVATAR_COLORS = [
     'bg-sky-100 text-sky-700', 'bg-amber-100 text-amber-700',
     'bg-rose-100 text-rose-700',
 ];
-export function Avatar({ name = '', size = 'md', color }) {
+export function Avatar({ name = '', size = 'md', color, src }) {
     const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || '?';
     const colorClass = color ?? AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
     const sizeClass  = { sm:'w-8 h-8 text-xs', md:'w-9 h-9 text-sm', lg:'w-11 h-11 text-base', xl:'w-14 h-14 text-lg' }[size];
+    if (src) {
+        return <img src={src} alt={name} className={clsx('rounded-full object-cover shrink-0', sizeClass)} />;
+    }
     return <div className={clsx('rounded-full flex items-center justify-center font-semibold shrink-0', sizeClass, colorClass)}>{initials}</div>;
 }
 

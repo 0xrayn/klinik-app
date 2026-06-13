@@ -47,6 +47,7 @@ const useAuth = create(
 
             hasRole:    (r)  => get().user?.roles?.some(x => x.name === r)  ?? false,
             hasAnyRole: (rs) => rs.some(r => get().user?.roles?.some(x => x.name === r)) ?? false,
+            setUser: (user) => set({ user }),
         }),
         { name: 'ks-auth', partialize: s => ({ token: s.token, user: s.user }) }
     )
