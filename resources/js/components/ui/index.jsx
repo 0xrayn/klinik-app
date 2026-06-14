@@ -86,15 +86,15 @@ export function Modal({ open, onClose, title, children, size = 'md', icon }) {
         <Transition show={open} as={Fragment}>
             <Dialog onClose={onClose} className="relative z-50">
                 <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0">
-                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" />
+                    <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-sm" />
                 </Transition.Child>
                 <div className="fixed inset-0 overflow-y-auto flex items-center justify-center p-4">
                     <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 scale-95 translate-y-2" enterTo="opacity-100 scale-100 translate-y-0" leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-                        <Dialog.Panel className={clsx('w-full bg-white rounded-2xl shadow-modal overflow-hidden', widths[size])}>
-                            <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
-                                {icon && <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">{icon}</div>}
-                                <Dialog.Title className="flex-1 font-semibold text-slate-900">{title}</Dialog.Title>
-                                <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors"><XMarkIcon className="w-4.5 h-4.5 w-5 h-5" /></button>
+                        <Dialog.Panel className={clsx('w-full bg-white dark:bg-slate-900 rounded-2xl shadow-modal overflow-hidden', widths[size])}>
+                            <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                                {icon && <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">{icon}</div>}
+                                <Dialog.Title className="flex-1 font-semibold text-slate-900 dark:text-slate-100">{title}</Dialog.Title>
+                                <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors"><XMarkIcon className="w-4.5 h-4.5 w-5 h-5" /></button>
                             </div>
                             <div className="p-5">{children}</div>
                         </Dialog.Panel>
@@ -110,10 +110,10 @@ export function ConfirmModal({ open, onClose, onConfirm, title, message, confirm
     return (
         <Modal open={open} onClose={onClose} title={title} size="sm">
             <div className="text-center">
-                <div className="w-14 h-14 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <ExclamationTriangleIcon className="w-7 h-7 text-rose-600" />
+                <div className="w-14 h-14 bg-rose-100 dark:bg-rose-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <ExclamationTriangleIcon className="w-7 h-7 text-rose-600 dark:text-rose-400" />
                 </div>
-                <p className="text-sm text-slate-600 mb-6">{message}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">{message}</p>
                 <div className="flex gap-3">
                     <Button variant="outline" className="flex-1" onClick={onClose}>Batal</Button>
                     <Button variant={confirmVariant} className="flex-1" loading={loading} onClick={onConfirm}>{confirmLabel}</Button>
@@ -127,8 +127,8 @@ export function ConfirmModal({ open, onClose, onConfirm, title, message, confirm
 export function EmptyState({ icon: Icon, title, desc, action }) {
     return (
         <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-            {Icon && <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4"><Icon className="w-7 h-7 text-slate-400" /></div>}
-            <p className="font-semibold text-slate-700 mb-1">{title}</p>
+            {Icon && <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4"><Icon className="w-7 h-7 text-slate-400" /></div>}
+            <p className="font-semibold text-slate-700 dark:text-slate-200 mb-1">{title}</p>
             {desc && <p className="text-sm text-slate-400 max-w-xs mb-5">{desc}</p>}
             {action}
         </div>
@@ -154,12 +154,12 @@ export function Pagination({ meta, onChange }) {
     if (!meta || meta.last_page <= 1) return null;
     const pages = Array.from({ length: Math.min(meta.last_page, 5) }, (_, i) => i + 1);
     return (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-            <p className="text-xs text-slate-500">Menampilkan <b>{meta.from}</b>–<b>{meta.to}</b> dari <b>{meta.total}</b></p>
+        <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 dark:border-slate-800">
+            <p className="text-xs text-slate-500 dark:text-slate-400">Menampilkan <b>{meta.from}</b>–<b>{meta.to}</b> dari <b>{meta.total}</b></p>
             <div className="flex items-center gap-1">
                 <button disabled={meta.current_page === 1} onClick={() => onChange(meta.current_page - 1)} className="btn btn-ghost btn-xs px-2 disabled:opacity-30">‹</button>
                 {pages.map(p => (
-                    <button key={p} onClick={() => onChange(p)} className={clsx('w-7 h-7 rounded-lg text-xs font-medium transition-colors', p === meta.current_page ? 'bg-brand-600 text-white' : 'text-slate-500 hover:bg-slate-100')}>{p}</button>
+                    <button key={p} onClick={() => onChange(p)} className={clsx('w-7 h-7 rounded-lg text-xs font-medium transition-colors', p === meta.current_page ? 'bg-brand-600 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800')}>{p}</button>
                 ))}
                 <button disabled={meta.current_page === meta.last_page} onClick={() => onChange(meta.current_page + 1)} className="btn btn-ghost btn-xs px-2 disabled:opacity-30">›</button>
             </div>
@@ -170,10 +170,10 @@ export function Pagination({ meta, onChange }) {
 /* ─── Alert ────────────────────────────────────────────────────── */
 export function Alert({ type = 'info', title, children }) {
     const styles = {
-        info:    'bg-sky-50   border-sky-200   text-sky-800',
-        success: 'bg-brand-50 border-brand-200 text-brand-800',
-        warning: 'bg-amber-50 border-amber-200 text-amber-800',
-        error:   'bg-rose-50  border-rose-200  text-rose-800',
+        info:    'bg-sky-50   border-sky-200   text-sky-800 dark:bg-sky-500/10 dark:border-sky-500/20 dark:text-sky-300',
+        success: 'bg-brand-50 border-brand-200 text-brand-800 dark:bg-brand-500/10 dark:border-brand-500/20 dark:text-brand-300',
+        warning: 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-300',
+        error:   'bg-rose-50  border-rose-200  text-rose-800 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-300',
     };
     return (
         <div className={clsx('rounded-xl border px-4 py-3 text-sm', styles[type])}>

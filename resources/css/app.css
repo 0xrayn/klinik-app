@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 
@@ -9,7 +9,7 @@
 
 @theme {
     --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    --font-display: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Manrope', 'Inter', ui-sans-serif, system-ui, sans-serif;
 
     --color-brand-50:  #eff6ff;
     --color-brand-100: #dbeafe;
@@ -129,7 +129,12 @@
 
     /* ── Cards ───────────────────────────────────────────────────────── */
     .card-md   { @apply bg-white rounded-2xl border border-slate-200 shadow-card-md dark:bg-slate-900 dark:border-slate-800; }
-    .card-hover { @apply card transition-all duration-200 hover:shadow-card-lg hover:-translate-y-1 hover:border-brand-200 cursor-pointer dark:hover:border-brand-500/30; }
+    .card-hover { @apply card relative overflow-hidden transition-all duration-200 hover:shadow-card-lg hover:-translate-y-0.5 hover:border-brand-200 cursor-pointer dark:hover:border-brand-500/30; }
+    .card-hover::before {
+        content: '';
+        @apply absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-brand-400 via-brand-600 to-brand-400 scale-x-0 origin-left transition-transform duration-300;
+    }
+    .card-hover:hover::before { @apply scale-x-100; }
 
     /* ── Form elements ───────────────────────────────────────────────── */
     .field-label { @apply block text-sm font-semibold text-slate-700 mb-1.5 dark:text-slate-300; }
