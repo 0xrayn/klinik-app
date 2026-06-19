@@ -5,6 +5,7 @@ import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { Card, Badge, Button, SectionHeader, EmptyState, Skeleton } from '../../components/ui';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import useAuth from '../../stores/authStore';
 
 function Stars({ rating }) {
     return (
@@ -29,6 +30,8 @@ function DoctorAvatar({ doctor, size = 'w-12 h-12' }) {
 }
 
 export default function DoctorList() {
+    const { hasAnyRole } = useAuth();
+    const canBook = hasAnyRole(['admin', 'pasien']);
     const [doctors, setDoctors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch]   = useState('');
@@ -108,7 +111,7 @@ export default function DoctorList() {
                                 <p className="text-sm font-bold text-brand-600">Rp {Number(d.consultation_fee).toLocaleString('id-ID')}</p>
                                 <div className="flex gap-2">
                                     <Link to={`/doctors/${d.id}`}><Button variant="outline" size="xs">Profil</Button></Link>
-                                    <Link to="/appointments/create"><Button variant="primary" size="xs">Buat Janji</Button></Link>
+                                    {canBook && <Link to="/appointments/create"><Button variant="primary" size="xs">Buat Janji</Button></Link>}
                                 </div>
                             </div>
                         </Card>

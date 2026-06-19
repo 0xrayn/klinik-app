@@ -6,6 +6,7 @@ import { Card, Button, Input, Select, Textarea } from '../../components/ui';
 import toast from 'react-hot-toast';
 import axios from 'axios';
 import clsx from 'clsx';
+import useAuth from '../../stores/authStore';
 
 const STEPS = ['Data Pasien','Pilih Dokter','Keluhan & Kirim'];
 
@@ -41,11 +42,15 @@ function StepBar({ current }) {
 
 export default function AppointmentCreate() {
     const nav = useNavigate();
+    const { user, hasRole } = useAuth();
+
     const [step, setStep]       = useState(0);
     const [doctors, setDoctors] = useState([]);
     const [slots, setSlots]     = useState([]);
     const [slotsLoading, setSlotsLoading] = useState(false);
-    const { register, handleSubmit, watch, setValue, trigger, formState: { errors, isSubmitting } } = useForm();
+    const { register, handleSubmit, watch, setValue, trigger, formState: { errors, isSubmitting } } = useForm({
+        defaultValues: {},
+    });
 
     useEffect(() => {
         axios.get('/api/doctors', { params: { per_page: 100 } })
@@ -117,7 +122,7 @@ export default function AppointmentCreate() {
 
             <StepBar current={step} />
 
-            {/* Step 0 — Patient Data */}
+            {/* Step 0: Patient Data */}
             {step === 0 && (
                 <Card className="p-6 space-y-4 animate-scale-in">
                     <p className="font-semibold text-slate-800 text-sm">Data Pasien</p>
@@ -150,23 +155,27 @@ export default function AppointmentCreate() {
                 </Card>
             )}
 
-            {/* Step 1 — Doctor & Schedule */}
+            {/* Step 1: Doctor and Schedule */}
             {step === 1 && (
                 <Card className="p-6 space-y-4 animate-scale-in">
-                    <p className="font-semibold text-slate-800 text-sm">Pilih Dokter & Jadwal</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Select label="Poli / Spesialisasi" {...register('poli')}
-                            onChange={e => { setValue('poli', e.target.value); setValue('doctor_id',''); setValue('time',''); }}>
-                            <option value="">-- Semua Poli --</option>
-                            {POLI.map(p => <option key={p}>{p}</option>)}
-                        </Select>
+                    <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm">Pilih Dokter &amp; Jadwal</p>
 
-                        <Select label="Dokter" error={errors.doctor_id?.message}
-                            {...register('doctor_id', { required:'Pilih dokter' })}
-                            onChange={e => { setValue('doctor_id', e.target.value); setValue('time', ''); }}>
-                            <option value="">-- Pilih Dokter --</option>
-                            {filteredDoc.map(d => <option key={d.id} value={d.id}>{d.user?.name} — {d.specialization}</option>)}
-                        </Select>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <>
+                                <Select label="Poli / Spesialisasi" {...register('poli')}
+                                    onChange={e => { setValue('poli', e.target.value); setValue('doctor_id',''); setValue('time',''); }}>
+                                    <option value="">-- Semua Poli --</option>
+                                    {POLI.map(p => <option key={p}>{p}</option>)}
+                                </Select>
+
+                                <Select label="Dokter" error={errors.doctor_id?.message}
+                                    {...register('doctor_id', { required:'Pilih dokter' })}
+                                    onChange={e => { setValue('doctor_id', e.target.value); setValue('time', ''); }}>
+                                    <option value="">-- Pilih Dokter --</option>
+                                    {filteredDoc.map(d => <option key={d.id} value={d.id}>{d.user?.name} ({d.specialization})</option>)}
+                                </Select>
+                        </>
+
 
                         <Input label="Tanggal Kunjungan" type="date" error={errors.date?.message}
                             min={new Date().toISOString().split('T')[0]}
@@ -212,7 +221,7 @@ export default function AppointmentCreate() {
                 </Card>
             )}
 
-            {/* Step 2 — Complaint + Summary */}
+            {/* Step 2: Complaint and Summary */}
             {step === 2 && (
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <Card className="p-6 space-y-4 animate-scale-in">
@@ -236,7 +245,7 @@ export default function AppointmentCreate() {
                                 ].map(([k,v]) => (
                                     <React.Fragment key={k}>
                                         <dt className="text-slate-400 text-xs">{k}</dt>
-                                        <dd className="font-medium text-slate-800 text-xs truncate">{v || '—'}</dd>
+                                        <dd className="font-medium text-slate-800 text-xs truncate">{v || '-'}</dd>
                                     </React.Fragment>
                                 ))}
                             </dl>

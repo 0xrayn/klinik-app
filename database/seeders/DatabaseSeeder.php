@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
         $admin = User::create([
             'name'     => 'Admin Klinik',
             'email'    => 'admin@klinik.id',
-            'password' => Hash::make('password'),
+            'password' => 'password',
             'phone'    => '081200000001',
         ]);
         $admin->assignRole('admin');
@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
         User::create([
             'name'     => 'Perawat Ana',
             'email'    => 'perawat@klinik.id',
-            'password' => Hash::make('password'),
+            'password' => 'password',
             'phone'    => '081200000002',
         ])->assignRole('perawat');
 
@@ -85,7 +85,7 @@ class DatabaseSeeder extends Seeder
             $user = User::create([
                 'name'     => $d['user']['name'],
                 'email'    => $d['user']['email'],
-                'password' => Hash::make('password'),
+                'password' => 'password',
                 'phone'    => $d['user']['phone'],
             ]);
             $user->assignRole('dokter');
@@ -126,7 +126,7 @@ class DatabaseSeeder extends Seeder
         $pasienUser = User::create([
             'name'     => 'Ahmad Fauzi',
             'email'    => 'pasien@klinik.id',
-            'password' => Hash::make('password'),
+            'password' => 'password',
             'phone'    => '081234567890',
         ]);
         $pasienUser->assignRole('pasien');

@@ -5,10 +5,13 @@ import { StarIcon as StarSolid } from '@heroicons/react/24/solid';
 import { Card, Badge, Button, Skeleton } from '../../components/ui';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import useAuth from '../../stores/authStore';
 
 const DAY_NAMES = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 
 export default function DoctorDetail() {
+    const { hasAnyRole } = useAuth();
+    const canBook = hasAnyRole(['admin', 'pasien']);
     const { id } = useParams();
     const [d, setD] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -82,11 +85,13 @@ export default function DoctorDetail() {
                         <p className="text-lg font-bold text-brand-600 mt-0.5">Rp {Number(d.consultation_fee).toLocaleString('id-ID')}</p>
                     </div>
 
-                    <Link to="/appointments/create" className="block mt-4">
-                        <Button variant="primary" size="md" className="w-full">
-                            <CalendarDaysIcon className="w-4 h-4" />Buat Janji
-                        </Button>
-                    </Link>
+                    {canBook && (
+                        <Link to="/appointments/create" className="block mt-4">
+                            <Button variant="primary" size="md" className="w-full">
+                                <CalendarDaysIcon className="w-4 h-4" />Buat Janji
+                            </Button>
+                        </Link>
+                    )}
                 </Card>
 
                 <div className="lg:col-span-2 space-y-4">

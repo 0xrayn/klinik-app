@@ -11,7 +11,7 @@ class MedicalRecord extends Model
         'patient_id','doctor_id','appointment_id','diagnosis',
         'icd_code','prescription','treatment','notes','examination_date','status',
     ];
-    protected $casts = ['examination_date'=>'date'];
+    protected $casts = ['examination_date'=>'date:Y-m-d'];
 
     public function activityLabel(): string
     {

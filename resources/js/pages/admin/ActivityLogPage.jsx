@@ -45,7 +45,7 @@ export default function ActivityLogPage() {
 
     return (
         <div className="space-y-5 animate-slide-up">
-            <SectionHeader title="Log Aktivitas" subtitle="Riwayat penghapusan data — bisa dikembalikan jika tidak sengaja" />
+            <SectionHeader title="Log Aktivitas" subtitle="Riwayat penghapusan data, bisa dikembalikan jika tidak sengaja" />
 
             <Card>
                 {loading ? (
@@ -67,7 +67,7 @@ export default function ActivityLogPage() {
                                     <tr key={log.id} className="tbl-row">
                                         <td className="tbl-cell font-semibold text-slate-800 text-sm">{log.subject_label ?? `#${log.subject_id}`}</td>
                                         <td className="tbl-cell text-xs text-slate-500">{LABELS[log.subject_type] ?? log.subject_type}</td>
-                                        <td className="tbl-cell text-xs text-slate-500">{log.user?.name ?? '—'}</td>
+                                        <td className="tbl-cell text-xs text-slate-500">{log.user?.name ?? '-'}</td>
                                         <td className="tbl-cell text-xs text-slate-400">{new Date(log.created_at).toLocaleString('id-ID')}</td>
                                         <td className="tbl-cell">
                                             <Badge variant={log.restored_at ? 'success' : 'warning'}>

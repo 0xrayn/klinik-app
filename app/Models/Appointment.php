@@ -11,7 +11,7 @@ class Appointment extends Model
         'patient_id','doctor_id','appointment_date','appointment_time',
         'queue_number','complaint','notes','status','created_by',
     ];
-    protected $casts = ['appointment_date'=>'date'];
+    protected $casts = ['appointment_date'=>'date:Y-m-d'];
     const STATUSES = ['pending','confirmed','in_progress','done','cancelled'];
 
     public function activityLabel(): string

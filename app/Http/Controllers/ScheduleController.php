@@ -24,4 +24,26 @@ class ScheduleController extends Controller {
         $schedule->update(['is_active'=>false]);
         return response()->json(['message'=>'Jadwal dinonaktifkan']);
     }
+
+    /**
+     * Returns booked-appointment counts for active schedules on a given date,
+     * keyed by schedule id. Computed authoritatively regardless of the
+     * requesting user's role, so counts stay consistent across dashboards.
+     */
+    public function occupancy(Request $r): JsonResponse {
+        $r->validate(['date'=>'required|date']);
+        $dayOfWeek = \Carbon\Carbon::parse($r->date)->dayOfWeek;
+
+        $schedules = Schedule::where('is_active', true)->where('day_of_week', $dayOfWeek)->get(['id','doctor_id','quota']);
+
+        $counts = \App\Models\Appointment::whereDate('appointment_date', $r->date)
+            ->whereNotIn('status', ['cancelled'])
+            ->selectRaw('doctor_id, count(*) as total')
+            ->groupBy('doctor_id')
+            ->pluck('total', 'doctor_id');
+
+        $result = $schedules->mapWithKeys(fn ($s) => [$s->id => (int) ($counts[$s->doctor_id] ?? 0)]);
+
+        return response()->json(['data' => $result]);
+    }
 }

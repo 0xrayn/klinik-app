@@ -17,6 +17,7 @@ function age(dob) {
 export default function PatientList() {
     const { hasRole } = useAuth();
     const canDelete = hasRole('admin');
+    const canCreate = hasRole('admin');
 
     const [data, setData] = useState([]);
     const [meta, setMeta] = useState(null);
@@ -61,7 +62,7 @@ export default function PatientList() {
     return (
         <div className="space-y-5 animate-slide-up">
             <SectionHeader title="Data Pasien" subtitle={`${meta?.total ?? 0} pasien terdaftar`}
-                action={<Link to="/patients/create"><Button variant="primary" size="sm"><PlusIcon className="w-4 h-4"/>Tambah Pasien</Button></Link>} />
+                action={canCreate && <Link to="/patients/create"><Button variant="primary" size="sm"><PlusIcon className="w-4 h-4"/>Tambah Pasien</Button></Link>} />
 
             <Card className="p-3.5">
                 <form onSubmit={handleSearch} className="relative">

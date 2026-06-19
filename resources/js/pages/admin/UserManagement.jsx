@@ -18,16 +18,19 @@ export default function UserManagement() {
     const [loading, setLoading] = useState(true);
     const [page, setPage]     = useState(1);
     const [search, setSearch] = useState('');
+    const [filter, setFilter] = useState('all'); // all | pending
     const [addOpen, setAdd]   = useState(false);
     const [editUser, setEdit] = useState(null);
     const [del, setDel]       = useState({ open: false, id: null });
 
     const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
-    const load = async (p = page, q = search) => {
+    const load = async (p = page, q = search, f = filter) => {
         setLoading(true);
         try {
-            const res = await axios.get('/api/admin/users', { params: { page: p, search: q || undefined, per_page: 10 } });
+            const params = { page: p, search: q || undefined, per_page: 10 };
+            if (f === 'pending') params.approval_status = 'pending';
+            const res = await axios.get('/api/admin/users', { params });
             setUsers(res.data.data.data);
             setMeta(res.data.data);
         } catch (e) {
@@ -37,12 +40,22 @@ export default function UserManagement() {
         }
     };
 
-    useEffect(() => { load(page, search); }, [page]);
+    useEffect(() => { load(page, search, filter); }, [page, filter]);
+
+    const handleApproval = async (id, status) => {
+        try {
+            await axios.put(`/api/admin/users/${id}/approval`, { approval_status: status });
+            toast.success(status === 'approved' ? 'Akun disetujui' : 'Akun ditolak');
+            load();
+        } catch (e) {
+            toast.error(e.response?.data?.message ?? 'Gagal memperbarui status');
+        }
+    };
 
     const handleSearch = (e) => {
         e.preventDefault();
         setPage(1);
-        load(1, search);
+        load(1, search, filter);
     };
 
     const onSubmit = async (data) => {
@@ -97,6 +110,16 @@ export default function UserManagement() {
                 }
             />
 
+            {/* Filter tabs */}
+            <div className="tab-bar w-fit">
+                <button onClick={() => { setFilter('all'); setPage(1); }} className={filter === 'all' ? 'tab-active' : 'tab-item'}>
+                    Semua User
+                </button>
+                <button onClick={() => { setFilter('pending'); setPage(1); }} className={filter === 'pending' ? 'tab-active' : 'tab-item'}>
+                    Menunggu Persetujuan
+                </button>
+            </div>
+
             {/* Search */}
             <form onSubmit={handleSearch} className="flex gap-2">
                 <div className="relative flex-1 max-w-sm">
@@ -118,7 +141,7 @@ export default function UserManagement() {
                     <table className="w-full">
                         <thead>
                             <tr>
-                                {['Pengguna', 'Email', 'Role', 'Status', 'Bergabung', 'Aksi'].map(h => (
+                                {['Pengguna', 'Email', 'Role', 'Status', 'Persetujuan', 'Bergabung', 'Aksi'].map(h => (
                                     <th key={h} className="tbl-head">{h}</th>
                                 ))}
                             </tr>
@@ -133,7 +156,7 @@ export default function UserManagement() {
                                             <div className="flex items-center gap-2.5">
                                                 <Avatar name={u.name} size="sm"
                                                     color={roleName === 'dokter' ? 'bg-violet-100 text-violet-700' : undefined} />
-                                                <span className="font-semibold text-slate-800 text-sm">{u.name}</span>
+                                                <span className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{u.name}</span>
                                             </div>
                                         </td>
                                         <td className="tbl-cell text-xs text-slate-500">{u.email}</td>
@@ -147,6 +170,24 @@ export default function UserManagement() {
                                                     {u.is_active ? 'Aktif' : 'Nonaktif'}
                                                 </Badge>
                                             </button>
+                                        </td>
+                                        <td className="tbl-cell">
+                                            {roleName === 'pasien' ? (
+                                                <span className="text-xs text-slate-300">-</span>
+                                            ) : u.approval_status === 'approved' ? (
+                                                <Badge variant="success">Disetujui</Badge>
+                                            ) : u.approval_status === 'rejected' ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Badge variant="danger">Ditolak</Badge>
+                                                    <button onClick={() => handleApproval(u.id, 'approved')} className="text-[11px] font-semibold text-brand-600 hover:underline">Setujui</button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Badge variant="warning">Menunggu</Badge>
+                                                    <button onClick={() => handleApproval(u.id, 'approved')} className="text-[11px] font-semibold text-brand-600 hover:underline">Setujui</button>
+                                                    <button onClick={() => handleApproval(u.id, 'rejected')} className="text-[11px] font-semibold text-rose-600 hover:underline">Tolak</button>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="tbl-cell text-xs text-slate-400">{new Date(u.created_at).toLocaleDateString('id-ID')}</td>
                                         <td className="tbl-cell">

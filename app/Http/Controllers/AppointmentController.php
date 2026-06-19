@@ -12,15 +12,26 @@ class AppointmentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $q = Appointment::with(['patient', 'doctor.user'])->orderByDesc('appointment_date')->orderBy('appointment_time');
+        $order = $request->get('order', 'desc');
+        $q = Appointment::with([
+                'patient:id,name,phone',
+                'doctor:id,user_id,specialization',
+                'doctor.user:id,name',
+            ])
+            ->select('id','patient_id','doctor_id','appointment_date','appointment_time','queue_number','complaint','status','created_by')
+            ->orderBy('appointment_date', $order)
+            ->orderBy('appointment_time', $order);
 
         if ($request->filled('status'))    $q->where('status', $request->status);
         if ($request->filled('date'))      $q->whereDate('appointment_date', $request->date);
+        if ($request->filled('date_from')) $q->whereDate('appointment_date', '>=', $request->date_from);
         if ($request->filled('doctor_id')) $q->where('doctor_id', $request->doctor_id);
 
         $user = $request->user();
         if ($user->hasRole('pasien') && $user->patient) {
             $q->where('patient_id', $user->patient->id);
+        } elseif ($user->hasRole('dokter') && $user->doctor && !$user->hasRole('admin')) {
+            $q->where('doctor_id', $user->doctor->id);
         }
 
         return response()->json(['data' => $q->paginate($request->get('per_page', 15))]);
@@ -70,9 +81,21 @@ class AppointmentController extends Controller
                 'created_by'       => $request->user()->id,
             ]);
 
+            $appt->load(['patient', 'doctor.user']);
+
+            if ($appt->doctor?->user_id) {
+                \App\Models\AppNotification::notify(
+                    $appt->doctor->user_id,
+                    'appointment_new',
+                    'Janji temu baru',
+                    "{$appt->patient->name} - {$appt->appointment_date} pukul " . substr($appt->appointment_time, 0, 5),
+                    '/appointments'
+                );
+            }
+
             return response()->json([
                 'message' => 'Janji temu berhasil dibuat',
-                'data'    => $appt->load(['patient', 'doctor.user']),
+                'data'    => $appt,
             ], 201);
         });
     }
@@ -105,6 +128,14 @@ class AppointmentController extends Controller
     public function updateStatus(Request $request, Appointment $appointment): JsonResponse
     {
         $request->validate(['status' => 'required|in:pending,confirmed,in_progress,done,cancelled']);
+
+        $user = $request->user();
+        if ($user->hasRole('dokter') && !$user->hasRole('admin')) {
+            if (!$user->doctor || $appointment->doctor_id !== $user->doctor->id) {
+                return response()->json(['message' => 'Anda hanya dapat mengubah status janji temu Anda sendiri'], 403);
+            }
+        }
+
         $appointment->update(['status' => $request->status]);
         return response()->json(['message' => 'Status diperbarui', 'data' => $appointment]);
     }

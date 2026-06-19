@@ -32,8 +32,8 @@ export default function LoginPage() {
     return (
         <div>
             <div className="mb-7">
-                <h2 className="text-xl font-bold text-slate-900">Masuk ke Akun</h2>
-                <p className="text-sm text-slate-500 mt-1">Masukkan email dan password Anda</p>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white font-display">Masuk ke Akun</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Masukkan email dan password Anda</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -57,7 +57,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
+                    <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-600 dark:text-slate-400">
                         <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
                         Ingat saya
                     </label>
@@ -69,18 +69,18 @@ export default function LoginPage() {
                 </Button>
             </form>
 
-            <p className="text-center text-sm text-slate-500 mt-5">
+            <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-5">
                 Belum punya akun?{' '}
                 <Link to="/register" className="text-brand-600 font-semibold hover:underline">Daftar</Link>
             </p>
 
             {/* Demo accounts */}
-            <div className="mt-5 rounded-xl border border-dashed border-slate-200 p-3.5 bg-slate-50/80">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Demo — password: <span className="font-mono">password</span></p>
+            <div className="mt-5 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-3.5 bg-slate-50/80 dark:bg-slate-800/50">
+                <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Demo (password: <span className="font-mono">password</span>)</p>
                 <div className="grid grid-cols-2 gap-1.5">
                     {DEMO.map(d => (
                         <button key={d.role} type="button" onClick={() => { setValue('email', d.email); setValue('password', 'password'); }}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors text-left">
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left">
                             <span className={`text-xs font-bold ${d.color}`}>{d.role}</span>
                             <span className="text-xs text-slate-400 truncate">{d.email}</span>
                         </button>

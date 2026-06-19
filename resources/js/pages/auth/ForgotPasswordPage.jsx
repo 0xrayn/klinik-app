@@ -23,8 +23,8 @@ export default function ForgotPasswordPage() {
             <div className="w-14 h-14 bg-brand-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <EnvelopeIcon className="w-7 h-7 text-brand-600" />
             </div>
-            <h2 className="font-bold text-slate-900 text-lg mb-2">Cek Email Anda</h2>
-            <p className="text-sm text-slate-500 mb-6">Link reset password telah dikirim. Periksa inbox atau folder spam.</p>
+            <h2 className="font-bold text-slate-900 dark:text-white text-lg mb-2 font-display">Cek Email Anda</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Link reset password telah dikirim. Periksa inbox atau folder spam.</p>
             <Link to="/login" className="btn-primary btn-md">Kembali ke Login</Link>
         </div>
     );
@@ -32,15 +32,15 @@ export default function ForgotPasswordPage() {
     return (
         <div>
             <div className="mb-7">
-                <h2 className="text-xl font-bold text-slate-900">Lupa Password</h2>
-                <p className="text-sm text-slate-500 mt-1">Masukkan email untuk reset password</p>
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white font-display">Lupa Password</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Masukkan email untuk reset password</p>
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <Input label="Email" type="email" placeholder="email@kliniksehat.id" error={errors.email?.message}
                     {...register('email', { required: 'Email wajib diisi', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Format tidak valid' } })} />
                 <Button type="submit" variant="primary" size="lg" loading={isSubmitting} className="w-full">Kirim Link Reset</Button>
             </form>
-            <Link to="/login" className="flex items-center justify-center gap-2 text-sm text-slate-500 hover:text-slate-700 mt-5 transition-colors">
+            <Link to="/login" className="flex items-center justify-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 mt-5 transition-colors">
                 <ArrowLeftIcon className="w-4 h-4" /> Kembali ke Login
             </Link>
         </div>

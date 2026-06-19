@@ -15,7 +15,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes, LogsDeletion;
 
     protected $fillable = [
-        'name', 'email', 'password', 'phone', 'avatar', 'is_active',
+        'name', 'email', 'password', 'phone', 'avatar', 'is_active', 'approval_status',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -41,5 +41,19 @@ class User extends Authenticatable
     public function patient(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(Patient::class);
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->approval_status === 'approved';
+    }
+
+    /**
+     * Roles that require admin approval before they can perform write actions
+     * (e.g. creating medical records, managing patients).
+     */
+    public function needsApproval(): bool
+    {
+        return $this->hasAnyRole(['dokter', 'perawat']) && !$this->isApproved();
     }
 }

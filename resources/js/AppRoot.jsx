@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import useAuth from './stores/authStore';
 
 import Splash from './components/ui/Splash';
 import AuthLayout from './layouts/AuthLayout';
 import DashboardLayout from './layouts/DashboardLayout';
 
+import LandingPage from './pages/landing/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
@@ -21,6 +23,7 @@ import PatientList from './pages/patients/PatientList';
 import PatientForm from './pages/patients/PatientForm';
 import PatientDetail from './pages/patients/PatientDetail';
 import MedicalRecordPage from './pages/medical-records/MedicalRecordPage';
+import CareInstructionPage from './pages/care-instructions/CareInstructionPage';
 import UserManagement from './pages/admin/UserManagement';
 import ActivityLogPage from './pages/admin/ActivityLogPage';
 import ProfilePage from './pages/profile/ProfilePage';
@@ -34,6 +37,7 @@ function ProtectedRoute({ children, roles = [] }) {
     }
 
     if (roles.length > 0 && !hasAnyRole(roles)) {
+        toast.error('Anda tidak memiliki akses ke halaman ini');
         return <Navigate to="/dashboard" replace />;
     }
 
@@ -48,6 +52,11 @@ function GuestRoute({ children }) {
     }
 
     return children;
+}
+
+function RootRedirect() {
+    const { isAuthenticated } = useAuth();
+    return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
 }
 
 export default function App() {
@@ -75,9 +84,9 @@ export default function App() {
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route path="/dashboard" element={<DashboardPage />} />
 
-                <Route path="/appointments" element={<ProtectedRoute roles={['admin','dokter','pasien']}><AppointmentList /></ProtectedRoute>} />
-                <Route path="/appointments/create" element={<ProtectedRoute roles={['admin','dokter','pasien']}><AppointmentCreate /></ProtectedRoute>} />
-                <Route path="/appointments/:id" element={<ProtectedRoute roles={['admin','dokter','pasien']}><AppointmentDetail /></ProtectedRoute>} />
+                <Route path="/appointments" element={<ProtectedRoute roles={['admin','perawat','pasien','dokter']}><AppointmentList /></ProtectedRoute>} />
+                <Route path="/appointments/create" element={<ProtectedRoute roles={['admin','pasien']}><AppointmentCreate /></ProtectedRoute>} />
+                <Route path="/appointments/:id" element={<ProtectedRoute roles={['admin','perawat','pasien','dokter']}><AppointmentDetail /></ProtectedRoute>} />
 
                 <Route path="/schedules" element={<SchedulePage />} />
 
@@ -90,7 +99,7 @@ export default function App() {
                 />
                 <Route
                     path="/patients/create"
-                    element={<ProtectedRoute roles={['admin', 'dokter', 'perawat']}><PatientForm /></ProtectedRoute>}
+                    element={<ProtectedRoute roles={['admin']}><PatientForm /></ProtectedRoute>}
                 />
                 <Route
                     path="/patients/:id/edit"
@@ -107,6 +116,10 @@ export default function App() {
                 />
 
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route
+                    path="/care-instructions"
+                    element={<ProtectedRoute roles={['admin','dokter','perawat']}><CareInstructionPage /></ProtectedRoute>}
+                />
 
                 <Route
                     path="/admin/users"
@@ -119,7 +132,9 @@ export default function App() {
             </Route>
 
             {/* Redirects & fallback */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={
+                <RootRedirect />
+            } />
             <Route path="*" element={<NotFound />} />
         </Routes>
     );

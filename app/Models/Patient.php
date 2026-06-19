@@ -9,7 +9,7 @@ class Patient extends Model
     use HasFactory, SoftDeletes, LogsDeletion;
     protected $fillable = [
         'user_id','name','nik','phone','birth_date','gender',
-        'blood_type','address','bpjs','allergies','chronic_diseases','is_active',
+        'blood_type','address','bpjs','allergies','chronic_diseases','medical_history','is_active',
     ];
     protected $casts = ['birth_date'=>'date','is_active'=>'boolean'];
     public function user()          { return $this->belongsTo(User::class); }

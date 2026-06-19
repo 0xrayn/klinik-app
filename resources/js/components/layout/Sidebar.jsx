@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
     HomeIcon, CalendarDaysIcon, UserGroupIcon, UsersIcon,
-    ClipboardDocumentListIcon, ClockIcon, ShieldCheckIcon, XMarkIcon, ArchiveBoxIcon,
+    ClipboardDocumentListIcon, ClipboardDocumentCheckIcon, ClockIcon, ShieldCheckIcon, XMarkIcon, ArchiveBoxIcon,
     ChevronLeftIcon, ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import useAuth from '../../stores/authStore';
@@ -12,17 +12,18 @@ const NAV = [
     {
         group: 'Menu Utama',
         items: [
-            { to: '/dashboard',    label: 'Dashboard',    Icon: HomeIcon,              roles: [] },
-            { to: '/appointments', label: 'Janji Temu',   Icon: CalendarDaysIcon,      roles: ['admin','dokter','pasien'] },
-            { to: '/schedules',    label: 'Jadwal Dokter',Icon: ClockIcon,             roles: [] },
+            { to: '/dashboard',    label: 'Dashboard',    Icon: HomeIcon,                      roles: [] },
+            { to: '/appointments', label: 'Janji Temu',   Icon: CalendarDaysIcon,               roles: ['admin','perawat','pasien','dokter'] },
+            { to: '/schedules',    label: 'Jadwal Dokter',Icon: ClockIcon,                      roles: [] },
         ],
     },
     {
         group: 'Data Klinik',
         items: [
-            { to: '/doctors',         label: 'Dokter',       Icon: UserGroupIcon,         roles: [] },
-            { to: '/patients',        label: 'Pasien',        Icon: UsersIcon,             roles: ['admin','dokter','perawat'] },
-            { to: '/medical-records', label: 'Rekam Medis',  Icon: ClipboardDocumentListIcon, roles: ['admin','dokter','perawat'] },
+            { to: '/doctors',            label: 'Dokter',              Icon: UserGroupIcon,              roles: [] },
+            { to: '/patients',           label: 'Pasien',              Icon: UsersIcon,                  roles: ['admin','dokter','perawat'] },
+            { to: '/medical-records',    label: 'Rekam Medis',         Icon: ClipboardDocumentListIcon,   roles: ['admin','dokter','perawat'] },
+            { to: '/care-instructions',  label: 'Instruksi Perawatan', Icon: ClipboardDocumentCheckIcon,  roles: ['admin','dokter','perawat'] },
         ],
     },
     {
@@ -35,8 +36,16 @@ const NAV = [
 ];
 
 export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) {
-    const { hasAnyRole, user } = useAuth();
+    const { hasAnyRole, hasRole, user } = useAuth();
     const initials = user?.name?.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'U';
+    const roleName = user?.roles?.[0]?.name ?? '';
+
+    const roleDesc = {
+        admin:   { label: 'Admin Klinik', color: 'text-brand-400' },
+        dokter:  { label: 'Periksa & catat rekam medis', color: 'text-sky-400' },
+        perawat: { label: 'Bantu perawatan & catat vital', color: 'text-violet-400' },
+        pasien:  { label: 'Buat janji & lihat rekam medis', color: 'text-amber-400' },
+    };
 
     return (
         <>
@@ -68,7 +77,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) 
                         <XMarkIcon className="w-4 h-4" />
                     </button>
 
-                    {/* Collapse toggle — anchored to the header's own edge, clear of the logo */}
+                    {/* Collapse toggle: anchored to the header edge, separate from the logo */}
                     <button onClick={onToggleCollapse}
                         className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 items-center justify-center w-6 h-6 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 shadow-card hover:text-brand-600 hover:border-brand-200 dark:hover:border-brand-500/40 transition-colors">
                         {collapsed ? <ChevronRightIcon className="w-3.5 h-3.5" /> : <ChevronLeftIcon className="w-3.5 h-3.5" />}
@@ -107,7 +116,7 @@ export default function Sidebar({ open, onClose, collapsed, onToggleCollapse }) 
                         </div>
                         <div className={clsx('flex-1 min-w-0 leading-tight', collapsed && 'lg:hidden')}>
                             <p className="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate">{user?.name}</p>
-                            <p className="text-[10px] text-slate-400 capitalize">{user?.roles?.[0]?.name ?? 'user'}</p>
+                            <p className={clsx('text-[10px] mt-0.5 truncate', roleDesc[roleName]?.color ?? 'text-slate-400')}>{roleDesc[roleName]?.label ?? roleName}</p>
                         </div>
                     </div>
                 </div>

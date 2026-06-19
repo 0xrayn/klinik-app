@@ -14,24 +14,62 @@ class AuthController extends Controller
 {
     public function register(Request $request): JsonResponse
     {
-        $data = $request->validate([
+        $role = $request->input('role', 'pasien');
+        if (!in_array($role, ['pasien', 'dokter', 'perawat'])) {
+            $role = 'pasien';
+        }
+
+        $rules = [
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'phone'    => 'required|string|max:20',
-        ]);
+        ];
+
+        if ($role === 'dokter') {
+            $rules['specialization'] = 'required|string|max:255';
+            $rules['license_number'] = 'required|string|max:255|unique:doctors';
+        }
+
+        $data = $request->validate($rules);
+
+        // Pasien accounts are usable immediately. Dokter/perawat accounts can log in,
+        // but write actions (input rekam medis, etc.) are blocked until an admin approves them.
+        $approvalStatus = $role === 'pasien' ? 'approved' : 'pending';
 
         $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
-            'phone'    => $data['phone'],
+            'name'            => $data['name'],
+            'email'           => $data['email'],
+            'password'        => $data['password'],
+            'phone'           => $data['phone'],
+            'approval_status' => $approvalStatus,
         ]);
-        $user->assignRole('pasien');
-        $token = $user->createToken('auth_token')->plainTextToken;
-        $user->load('roles');
+        $user->assignRole($role);
 
-        return response()->json(['message' => 'Registrasi berhasil', 'data' => compact('user', 'token')], 201);
+        if ($role === 'dokter') {
+            $user->doctor()->create([
+                'specialization' => $data['specialization'],
+                'license_number' => $data['license_number'],
+                'is_active'      => false, // activated by admin upon approval
+            ]);
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+        $user->load('roles', 'doctor');
+
+        if ($approvalStatus === 'pending') {
+            \App\Models\AppNotification::notifyRole('admin', 'account_pending',
+                'Akun baru menunggu persetujuan',
+                "{$user->name} mendaftar sebagai " . ucfirst($role) . ' dan menunggu persetujuan.',
+                '/admin/users?filter=pending');
+        }
+
+        return response()->json([
+            'message' => $approvalStatus === 'pending'
+                ? 'Registrasi berhasil. Akun Anda menunggu persetujuan admin sebelum dapat menginput data.'
+                : 'Registrasi berhasil',
+            'data' => compact('user', 'token'),
+        ], 201);
     }
 
     public function login(Request $request): JsonResponse
@@ -41,21 +79,26 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        if (!Auth::attempt($credentials)) {
+        $user = User::where('email', $credentials['email'])->first();
+
+        if (!$user || !\Illuminate\Support\Facades\Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages(['email' => 'Email atau password salah.']);
         }
 
-        $user = Auth::user();
+        if (!$user->is_active) {
+            throw ValidationException::withMessages(['email' => 'Akun Anda tidak aktif.']);
+        }
+
         $user->tokens()->delete();
         $token = $user->createToken('auth_token')->plainTextToken;
-        $user->load('roles');
+        $user->load('roles', 'doctor', 'patient');
 
         return response()->json(['message' => 'Login berhasil', 'data' => compact('user', 'token')]);
     }
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json(['data' => $request->user()->load('roles')]);
+        return response()->json(['data' => $request->user()->load('roles', 'doctor', 'patient')]);
     }
 
     public function logout(Request $request): JsonResponse
@@ -103,7 +146,7 @@ class AuthController extends Controller
         if (!Hash::check($request->current_password, $user->password)) {
             throw ValidationException::withMessages(['current_password' => 'Password saat ini salah.']);
         }
-        $user->update(['password' => Hash::make($request->password)]);
+        $user->update(['password' => $request->password]);
         return response()->json(['message' => 'Password berhasil diubah']);
     }
 
@@ -124,7 +167,7 @@ class AuthController extends Controller
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
-                $user->forceFill(['password' => Hash::make($password)])->save();
+                $user->forceFill(['password' => $password])->save();
                 $user->tokens()->delete();
             }
         );

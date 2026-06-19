@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import clsx from 'clsx';
 
 export default function Topbar({ onMenu }) {
-    const { user, logout } = useAuth();
+    const { user, logout, setUser } = useAuth();
     const { theme, toggle } = useTheme();
     const nav = useNavigate();
     const initials = user?.name?.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'U';
@@ -17,41 +17,49 @@ export default function Topbar({ onMenu }) {
 
     const [notifications, setNotifications] = React.useState([]);
     const [notifLoading, setNotifLoading] = React.useState(true);
-    const notifCount = notifications.filter(n => !n.read).length;
+    const [unread, setUnread] = React.useState(0);
 
-    React.useEffect(() => {
-        const today = new Date().toISOString().split('T')[0];
-        const params = roleName === 'pasien'
-            ? { date_from: today, status: 'confirmed', per_page: 5 }
-            : { date: today, status: 'pending', per_page: 5 };
-
-        axios.get('/api/appointments', { params })
+    const loadNotifications = React.useCallback(() => {
+        axios.get('/api/notifications')
             .then(res => {
-                let read = [];
-                try { read = JSON.parse(localStorage.getItem('read-notifications') || '[]'); } catch (_) {}
-                const list = res.data.data.data.map(a => ({
-                    id: a.id,
-                    title: roleName === 'pasien'
-                        ? `Janji temu dengan ${a.doctor?.user?.name ?? 'dokter'}`
-                        : `Janji temu: ${a.patient?.name ?? 'Pasien'}`,
-                    subtitle: `${a.appointment_date} · ${a.appointment_time?.slice(0,5)}`,
-                    read: read.includes(a.id),
-                }));
-                setNotifications(list);
+                setNotifications(res.data.data);
+                setUnread(res.data.unread);
+
+                // If the account approval status changed, refresh the cached user
+                // so banners (e.g. on the profile page) reflect it immediately.
+                const approvalChanged = res.data.data.some(n => ['account_approved', 'account_rejected'].includes(n.type));
+                if (approvalChanged) {
+                    axios.get('/api/auth/me').then(meRes => setUser(meRes.data.data)).catch(() => {});
+                }
             })
             .catch(() => setNotifications([]))
             .finally(() => setNotifLoading(false));
-    }, [roleName]);
+    }, [setUser]);
 
-    const markAsRead = (id) => {
-        setNotifications(list => list.map(n => n.id === id ? { ...n, read: true } : n));
-        try {
-            const read = JSON.parse(localStorage.getItem('read-notifications') || '[]');
-            if (!read.includes(id)) {
-                read.push(id);
-                localStorage.setItem('read-notifications', JSON.stringify(read));
-            }
-        } catch (_) {}
+    React.useEffect(() => {
+        loadNotifications();
+        // Poll periodically so new events (e.g. new appointment, approval) show up without a full reload
+        const id = setInterval(loadNotifications, 30000);
+        return () => clearInterval(id);
+    }, [loadNotifications]);
+
+    const handleNotifClick = async (n) => {
+        if (!n.read_at) {
+            try {
+                await axios.put(`/api/notifications/${n.id}/read`);
+                setNotifications(list => list.map(x => x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x));
+                setUnread(u => Math.max(0, u - 1));
+            } catch (_) {}
+        }
+        if (n.url) nav(n.url);
+    };
+
+    const timeAgo = (iso) => {
+        const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+        if (diff < 60) return 'Baru saja';
+        if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
+        return new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
     };
 
     const handleLogout = async () => {
@@ -80,7 +88,7 @@ export default function Topbar({ onMenu }) {
                 <Menu as="div" className="relative">
                     <Menu.Button className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-300 transition-colors">
                         <BellIcon className="w-5 h-5" />
-                        {notifCount > 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />}
+                        {unread > 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />}
                     </Menu.Button>
 
                     <Transition as={Fragment}
@@ -89,20 +97,21 @@ export default function Topbar({ onMenu }) {
                         <Menu.Items className="absolute right-0 mt-1.5 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-card-lg py-1 z-50 focus:outline-none max-h-96 overflow-y-auto">
                             <div className="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Notifikasi</p>
-                                {notifCount > 0 && <span className="text-xs text-brand-600 font-medium">{notifCount} baru</span>}
+                                {unread > 0 && <span className="text-xs text-brand-600 dark:text-brand-400 font-medium">{unread} baru</span>}
                             </div>
                             {notifLoading ? (
-                                <div className="px-3 py-6 text-center text-xs text-slate-400">Memuat…</div>
+                                <div className="px-3 py-6 text-center text-xs text-slate-400">Memuat...</div>
                             ) : notifications.length === 0 ? (
-                                <div className="px-3 py-6 text-center text-xs text-slate-400">Tidak ada notifikasi baru</div>
+                                <div className="px-3 py-6 text-center text-xs text-slate-400">Tidak ada notifikasi</div>
                             ) : notifications.map(n => (
                                 <Menu.Item key={n.id}>{({ active }) => (
-                                    <button onClick={() => { markAsRead(n.id); nav('/appointments'); }}
-                                        className={clsx('flex w-full items-start gap-2 px-3 py-2.5 text-left text-xs border-b border-slate-50 dark:border-slate-800 last:border-0', active && 'bg-slate-50 dark:bg-slate-800', !n.read && 'bg-brand-50/40 dark:bg-brand-500/10')}>
-                                        <span className={clsx('mt-1 w-1.5 h-1.5 rounded-full shrink-0', n.read ? 'bg-transparent' : 'bg-brand-500')} />
-                                        <span className="flex flex-col items-start gap-0.5">
-                                            <span className={clsx('font-semibold', n.read ? 'text-slate-500' : 'text-slate-700 dark:text-slate-100')}>{n.title}</span>
-                                            <span className="text-slate-400">{n.subtitle}</span>
+                                    <button onClick={() => handleNotifClick(n)}
+                                        className={clsx('flex w-full items-start gap-2 px-3 py-2.5 text-left text-xs border-b border-slate-50 dark:border-slate-800 last:border-0', active && 'bg-slate-50 dark:bg-slate-800', !n.read_at && 'bg-brand-50/40 dark:bg-brand-500/10')}>
+                                        <span className={clsx('mt-1 w-1.5 h-1.5 rounded-full shrink-0', n.read_at ? 'bg-transparent' : 'bg-brand-500')} />
+                                        <span className="flex flex-col items-start gap-0.5 min-w-0">
+                                            <span className={clsx('font-semibold', n.read_at ? 'text-slate-500' : 'text-slate-700 dark:text-slate-100')}>{n.title}</span>
+                                            {n.body && <span className="text-slate-400 truncate">{n.body}</span>}
+                                            <span className="text-slate-300 dark:text-slate-500 text-[10px]">{timeAgo(n.created_at)}</span>
                                         </span>
                                     </button>
                                 )}</Menu.Item>

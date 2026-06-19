@@ -90,13 +90,13 @@ export function Modal({ open, onClose, title, children, size = 'md', icon }) {
                 </Transition.Child>
                 <div className="fixed inset-0 overflow-y-auto flex items-center justify-center p-4">
                     <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0 scale-95 translate-y-2" enterTo="opacity-100 scale-100 translate-y-0" leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-                        <Dialog.Panel className={clsx('w-full bg-white dark:bg-slate-900 rounded-2xl shadow-modal overflow-hidden', widths[size])}>
-                            <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                        <Dialog.Panel className={clsx('w-full bg-white dark:bg-slate-900 rounded-2xl shadow-modal overflow-hidden flex flex-col max-h-[85vh]', widths[size])}>
+                            <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
                                 {icon && <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">{icon}</div>}
                                 <Dialog.Title className="flex-1 font-semibold text-slate-900 dark:text-slate-100">{title}</Dialog.Title>
                                 <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 transition-colors"><XMarkIcon className="w-4.5 h-4.5 w-5 h-5" /></button>
                             </div>
-                            <div className="p-5">{children}</div>
+                            <div className="p-5 overflow-y-auto flex-1 min-h-0">{children}</div>
                         </Dialog.Panel>
                     </Transition.Child>
                 </div>
