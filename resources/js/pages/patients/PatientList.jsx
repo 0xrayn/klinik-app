@@ -18,6 +18,7 @@ export default function PatientList() {
     const { hasRole } = useAuth();
     const canDelete = hasRole('admin');
     const canCreate = hasRole('admin');
+    const canEdit   = hasRole('admin') || hasRole('perawat');
 
     const [data, setData] = useState([]);
     const [meta, setMeta] = useState(null);
@@ -113,9 +114,11 @@ export default function PatientList() {
                                                     <Link to={`/patients/${p.id}`}>
                                                         <button className="p-1.5 rounded-lg hover:bg-brand-50 text-slate-400 hover:text-brand-600 transition-colors"><EyeIcon className="w-4 h-4"/></button>
                                                     </Link>
+                                                    {canEdit && (
                                                     <Link to={`/patients/${p.id}/edit`}>
                                                         <button className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"><PencilSquareIcon className="w-4 h-4"/></button>
                                                     </Link>
+                                                    )}
                                                     {canDelete && (
                                                         <button onClick={() => setDel({ open:true, id:p.id })}
                                                             className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors"><TrashIcon className="w-4 h-4"/></button>

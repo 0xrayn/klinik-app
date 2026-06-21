@@ -63,9 +63,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('appointments/{appointment}', [AppointmentController::class, 'show']);
     });
 
-    // Dokter (and admin) can update the status of an appointment in their queue.
-    // Perawat can also progress the queue (e.g. check-in a patient) but cannot create/delete.
-    Route::middleware('role:admin|dokter|perawat')->group(function () {
+    // Only dokter (own appointments) and admin can update appointment status.
+    Route::middleware('role:admin|dokter')->group(function () {
         Route::put('appointments/{appointment}/status', [AppointmentController::class, 'updateStatus'])->middleware('approved');
     });
 
@@ -96,11 +95,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('patients', [PatientController::class, 'store'])->middleware('approved');
         Route::delete('patients/{patient}', [PatientController::class, 'destroy'])->middleware('approved');
     });
-    // Dokter/perawat can view and add clinical notes (not identity data) to existing patients.
+    // Admin and perawat can update patient clinical notes (blood_type, allergies, etc).
+    // Dokter is READ-ONLY for patient records -- they write to medical_records instead.
+    Route::middleware('role:admin|perawat')->group(function () {
+        Route::put('patients/{patient}', [PatientController::class, 'update'])->middleware('approved');
+    });
+    // All clinical roles can view patient list/detail.
     Route::middleware('role:admin|dokter|perawat')->group(function () {
         Route::get('patients', [PatientController::class, 'index']);
         Route::get('patients/{patient}', [PatientController::class, 'show']);
-        Route::put('patients/{patient}', [PatientController::class, 'update'])->middleware('approved');
     });
 
     // ── Medical Records ───────────────────────────────────────

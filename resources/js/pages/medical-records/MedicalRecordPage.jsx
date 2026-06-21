@@ -24,6 +24,10 @@ export default function MedicalRecordPage() {
     const [view, setView]   = useState(null);
     const [editRec, setEditRec] = useState(null);
     const [del, setDel]     = useState({ open: false, id: null });
+    const [sendInstr, setSendInstr] = useState(null);
+    const [instrText, setInstrText] = useState('');
+    const [instrNotes, setInstrNotes] = useState('');
+    const [sendingInstr, setSendingInstr] = useState(false);
 
     const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
@@ -110,6 +114,27 @@ export default function MedicalRecordPage() {
             toast.error(e.response?.data?.message ?? 'Gagal menghapus data');
         } finally {
             setDel({ open: false, id: null });
+        }
+    };
+
+    const submitInstruction = async () => {
+        if (!instrText.trim()) return toast.error('Instruksi tidak boleh kosong');
+        setSendingInstr(true);
+        try {
+            await axios.post('/api/care-instructions', {
+                medical_record_id: sendInstr.id,
+                patient_id: sendInstr.patient_id,
+                instruction: instrText,
+                notes: instrNotes,
+            });
+            toast.success('Instruksi berhasil dikirim ke perawat');
+            setSendInstr(null);
+            setInstrText('');
+            setInstrNotes('');
+        } catch (e) {
+            toast.error(e.response?.data?.message ?? 'Gagal mengirim instruksi');
+        } finally {
+            setSendingInstr(false);
         }
     };
 
@@ -287,9 +312,10 @@ export default function MedicalRecordPage() {
                         ))}
                         {canEdit && (
                             <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                                <a href="/care-instructions" className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">
-                                    + Kirim Instruksi Perawatan ke Perawat
-                                </a>
+                                <button onClick={() => { setView(null); setSendInstr(view); }}
+                                    className="text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-1">
+                                    Kirim Instruksi Perawatan ke Perawat
+                                </button>
                             </div>
                         )}
                     </div>
@@ -299,6 +325,24 @@ export default function MedicalRecordPage() {
             <ConfirmModal open={del.open} onClose={() => setDel({ open:false, id:null })}
                 title="Hapus Rekam Medis" message="Data akan dipindahkan ke Log Aktivitas dan dapat dikembalikan oleh admin."
                 onConfirm={handleDelete} />
+
+            {/* Send care instruction to nurse */}
+            <Modal open={!!sendInstr} onClose={() => setSendInstr(null)} title="Kirim Instruksi ke Perawat" size="sm">
+                <div className="space-y-4">
+                    <div className="rounded-xl bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20 px-3 py-2.5 text-xs">
+                        <p className="font-semibold text-violet-700 dark:text-violet-300">Pasien: {sendInstr?.patient?.name}</p>
+                        <p className="text-violet-600 dark:text-violet-400 mt-0.5">Diagnosis: {sendInstr?.diagnosis}</p>
+                    </div>
+                    <Textarea label="Instruksi untuk Perawat" placeholder="Contoh: Berikan Paracetamol 500mg 3x1 sehari, ganti perban tiap 8 jam..."
+                        rows={3} value={instrText} onChange={e => setInstrText(e.target.value)} />
+                    <Textarea label="Catatan Tambahan (opsional)" placeholder="Informasi pendukung untuk perawat..."
+                        rows={2} value={instrNotes} onChange={e => setInstrNotes(e.target.value)} />
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" size="sm" onClick={() => setSendInstr(null)}>Batal</Button>
+                        <Button variant="primary" size="sm" loading={sendingInstr} onClick={submitInstruction}>Kirim ke Perawat</Button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

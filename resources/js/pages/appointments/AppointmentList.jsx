@@ -22,8 +22,10 @@ export default function AppointmentList() {
     const isPatient = hasRole('pasien') && !hasRole('admin');
     const canCreate = hasRole('admin') || hasRole('pasien');
     const canDelete = hasRole('admin');
-    // Doctors update the clinical status of their own queue; admin can too.
-    const canChangeStatus = hasRole('admin') || isDoctor || hasRole('perawat');
+    // Only admin and dokter can change appointment status.
+    // Dokter can only change their OWN appointments (enforced on the backend too).
+    // Perawat is view-only for appointments.
+    const canChangeStatus = hasRole('admin') || isDoctor;
 
     const [data, setData]       = useState([]);
     const [meta, setMeta]       = useState(null);

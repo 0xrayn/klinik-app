@@ -103,7 +103,7 @@ export default function App() {
                 />
                 <Route
                     path="/patients/:id/edit"
-                    element={<ProtectedRoute roles={['admin', 'dokter', 'perawat']}><PatientForm /></ProtectedRoute>}
+                    element={<ProtectedRoute roles={['admin', 'perawat']}><PatientForm /></ProtectedRoute>}
                 />
                 <Route
                     path="/patients/:id"

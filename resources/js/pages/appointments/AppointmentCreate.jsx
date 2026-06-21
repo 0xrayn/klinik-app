@@ -8,7 +8,7 @@ import axios from 'axios';
 import clsx from 'clsx';
 import useAuth from '../../stores/authStore';
 
-const STEPS = ['Data Pasien','Pilih Dokter','Keluhan & Kirim'];
+const STEPS = ['Data Pasien', 'Poli & Dokter', 'Keluhan & Konfirmasi'];
 
 function StepBar({ current }) {
     return (
@@ -162,11 +162,15 @@ export default function AppointmentCreate() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <>
-                                <Select label="Poli / Spesialisasi" {...register('poli')}
+                                <Select label="Poli / Spesialisasi" error={errors.poli?.message}
+                                    {...register('poli', { required: 'Pilih poli/spesialisasi terlebih dahulu' })}
                                     onChange={e => { setValue('poli', e.target.value); setValue('doctor_id',''); setValue('time',''); }}>
-                                    <option value="">-- Semua Poli --</option>
+                                    <option value="">-- Pilih Poli / Spesialisasi --</option>
                                     {POLI.map(p => <option key={p}>{p}</option>)}
                                 </Select>
+                                {watch('poli') && filteredDoc.length === 0 && (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400">Tidak ada dokter tersedia untuk poli ini. Coba pilih poli lain.</p>
+                                )}
 
                                 <Select label="Dokter" error={errors.doctor_id?.message}
                                     {...register('doctor_id', { required:'Pilih dokter' })}
@@ -216,7 +220,7 @@ export default function AppointmentCreate() {
                     </div>
                     <div className="flex justify-between pt-1">
                         <Button variant="ghost" size="sm" onClick={() => setStep(0)}>← Kembali</Button>
-                        <Button variant="primary" size="sm" onClick={() => goNext(['doctor_id','date','time'])}>Lanjut →</Button>
+                        <Button variant="primary" size="sm" onClick={() => goNext(['poli','doctor_id','date','time'])}>Lanjut →</Button>
                     </div>
                 </Card>
             )}
